@@ -95,11 +95,12 @@ const Home = () => {
           <Controller
             name="hideResults"
             control={control}
-            render={({ field }) => (
+            render={({ field: { value, onChange, ...rest } }) => (
               <input
-                {...field}
+                {...rest} // Spread remaining field props
                 type="checkbox"
-                checked={field.value} // ✅ Use checked instead of value
+                checked={value} // ✅ Use checked instead of value
+                onChange={(e) => onChange(e.target.checked)} // ✅ Ensure boolean value
                 className="mr-2 w-5 h-5"
               />
             )}
