@@ -21,11 +21,8 @@ const PollPage = () => {
       fetchPollData();
       fetchComments();
 
-      // Check if the user already voted
       const votedPolls = JSON.parse(localStorage.getItem("votedPolls") || "[]");
-      if (votedPolls.includes(id)) {
-        setHasVoted(true);
-      }
+      if (votedPolls.includes(id)) setHasVoted(true);
     }
   }, [id]);
 
@@ -34,7 +31,7 @@ const PollPage = () => {
       const res = await axiosInstance.get(`/poll/${id}`);
       setPoll(res.data);
     } catch (err) {
-      console.error("Error fetching poll:", err);
+      console.log(err);
       setError("Poll not found");
     }
   };
@@ -49,28 +46,22 @@ const PollPage = () => {
   };
 
   const handleVote = async (optionIndex: number) => {
-    if (hasVoted) {
-      toast.error("You have already voted!");
-      return;
-    }
+    if (hasVoted) return toast.error("You have already voted!");
 
     try {
       await axiosInstance.post(`/poll/${id}/vote`, { optionIndex });
-
-      // Save vote to local storage
-      const votedPolls = JSON.parse(localStorage.getItem("votedPolls") || "[]");
-      votedPolls.push(id);
-      localStorage.setItem("votedPolls", JSON.stringify(votedPolls));
+      localStorage.setItem(
+        "votedPolls",
+        JSON.stringify([
+          ...JSON.parse(localStorage.getItem("votedPolls") || "[]"),
+          id,
+        ])
+      );
       setHasVoted(true);
-
       fetchPollData();
-
-      toast.success("Thank you! See result when poll is ended!", {
-        duration: 4000,
-        position: "top-center",
-      });
+      toast.success("Thank you! See result when poll is ended!");
     } catch (err) {
-      console.error("Error voting:", err);
+      console.log(err);
       toast.error("Failed to submit vote.");
     }
   };
@@ -81,38 +72,29 @@ const PollPage = () => {
       fetchPollData();
       toast.success(reactionType === "like" ? "Liked!" : "Marked as Trending!");
     } catch (err) {
-      console.error(`Error adding ${reactionType}:`, err);
+      console.log(err);
       toast.error(`Failed to add ${reactionType}.`);
     }
   };
 
   const handleAddComment = async (data: any) => {
-    if (!data.text.trim()) {
-      toast.error("Comment cannot be empty!");
-      return;
-    }
+    if (!data.text.trim()) return toast.error("Comment cannot be empty!");
 
     try {
       await axiosInstance.post(`/comment`, { pollId: id, text: data.text });
-
       fetchComments();
       reset();
       toast.success("Comment added!");
     } catch (err) {
-      console.error("Error adding comment:", err);
+      console.log(err);
       toast.error("Failed to add comment.");
     }
   };
 
-  const isPollExpired = () => {
-    if (!poll) return false;
-    return new Date().getTime() >= new Date(poll.data.expiresAt).getTime();
-  };
-
-  const shouldShowResults = () => {
-    if (!poll) return false;
-    return !poll.data.hideResults || isPollExpired();
-  };
+  const isPollExpired = () =>
+    poll && new Date().getTime() >= new Date(poll.data.expiresAt).getTime();
+  const shouldShowResults = () =>
+    poll && (!poll.data.hideResults || isPollExpired());
 
   if (error)
     return <div className="text-red-500 text-center mt-10">{error}</div>;
@@ -126,27 +108,48 @@ const PollPage = () => {
           {poll.data.question}
         </h1>
 
-        {/* Poll Options */}
+        {/* Poll Options with Progress Bar */}
         <ul className="space-y-4">
-          {poll.data.options.map((opt: any, index: number) => (
-            <li
-              key={index}
-              className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-700"
-            >
-              <span className="text-gray-700 dark:text-gray-300 font-medium">
-                {opt.text}
-              </span>
-              <div className="flex items-center gap-2">
-                {/* Show votes only if results are visible */}
-                {shouldShowResults() && (
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">
-                    {opt.votes} votes
+          {poll.data.options.map((opt: any, index: number) => {
+            const totalVotes = poll.data.options.reduce(
+              (sum: number, o: any) => sum + o.votes,
+              0
+            );
+            const percentage = totalVotes
+              ? ((opt.votes / totalVotes) * 100).toFixed(1)
+              : 0;
+
+            return (
+              <li
+                key={index}
+                className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 relative"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">
+                    {opt.text}
                   </span>
+                  {shouldShowResults() && (
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">
+                      {opt.votes} votes ({percentage}%)
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                {shouldShowResults() && (
+                  <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-2 relative">
+                    <div
+                      className="h-2 bg-violet-600 rounded-full transition-all"
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
                 )}
+
+                {/* Vote Button */}
                 <button
                   onClick={() => handleVote(index)}
                   disabled={hasVoted}
-                  className={`px-3 py-1 ${
+                  className={`absolute top-1/2 right-4 transform -translate-y-1/2 px-3 py-1 ${
                     hasVoted
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-violet-600 hover:bg-violet-700"
@@ -154,41 +157,38 @@ const PollPage = () => {
                 >
                   {hasVoted ? "Voted" : "Vote"}
                 </button>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
 
-        {/* Result Display */}
         {isPollExpired() && (
           <p className="text-center text-green-500 font-bold mt-4">
             Poll has ended. Here are the final results.
           </p>
         )}
 
-        {/* Like and Trending Buttons */}
+        {/* Reaction Buttons */}
         <div className="flex justify-between mt-6">
           <button
             onClick={() => handleReaction("like")}
-            className="flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
           >
             👍 Like ({poll.data.reactions?.like || 0})
           </button>
           <button
             onClick={() => handleReaction("trending")}
-            className="flex items-center px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
           >
             🔥 Trending ({poll.data.reactions?.trending || 0})
           </button>
         </div>
 
-        {/* Comment Section */}
+        {/* Comments */}
         <div className="mt-6">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             Comments
           </h2>
-
-          {/* Comment Form */}
           <form onSubmit={handleSubmit(handleAddComment)} className="mt-3 flex">
             <input
               {...register("text")}
@@ -210,9 +210,9 @@ const PollPage = () => {
               comments.map((comment) => (
                 <li
                   key={comment._id}
-                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
+                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-lg"
                 >
-                  <p className="text-gray-900 dark:text-white font-medium">
+                  <p className="text-gray-900 dark:text-white">
                     {comment.text}
                   </p>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
