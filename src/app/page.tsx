@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import { useForm, Controller } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axios";
 
 const Home = () => {
-  const { control, handleSubmit } = useForm({
+  const { control, handleSubmit, watch } = useForm({
     defaultValues: {
       question: "",
       options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
@@ -13,6 +14,7 @@ const Home = () => {
       hideResults: false,
     },
   });
+
   const router = useRouter();
 
   const onSubmit = async (data: any) => {
@@ -25,21 +27,23 @@ const Home = () => {
       };
 
       const response = await axiosInstance.post("/poll", formattedData);
-      router.push(`/poll/${response.data._id}`);
+      router.push(`/poll/${response?.data?.data?._id}`);
     } catch (error) {
       console.error("Error creating poll:", error);
     }
   };
 
   return (
-    <div className="flex flex-col justify-center  items-center min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-        Create a Poll
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+      <h1 className="text-3xl font-bold text-violet-700 dark:text-white mb-6">
+        CREATE A POLL
       </h1>
+
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="w-full max-w-lg bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
       >
+        {/* Poll Question */}
         <Controller
           name="question"
           control={control}
@@ -52,7 +56,9 @@ const Home = () => {
             />
           )}
         />
-        {Array.from({ length: 4 }).map((_, index) => (
+
+        {/* Poll Options */}
+        {watch("options").map((_, index) => (
           <Controller
             key={index}
             name={`options.${index}.text`}
@@ -67,6 +73,8 @@ const Home = () => {
             )}
           />
         ))}
+
+        {/* Poll Duration */}
         <Controller
           name="duration"
           control={control}
@@ -81,17 +89,17 @@ const Home = () => {
             </select>
           )}
         />
+
+        {/* Hide Results Checkbox */}
         <label className="mb-4 flex items-center">
           <Controller
             name="hideResults"
             control={control}
-            render={({ field: { onChange, onBlur, value, ref } }) => (
+            render={({ field }) => (
               <input
+                {...field}
                 type="checkbox"
-                onChange={onChange}
-                onBlur={onBlur}
-                checked={value}
-                ref={ref}
+                checked={field.value} // ✅ Use checked instead of value
                 className="mr-2 w-5 h-5"
               />
             )}
@@ -100,6 +108,8 @@ const Home = () => {
             Hide results until poll ends
           </span>
         </label>
+
+        {/* Submit Button */}
         <button
           type="submit"
           className="p-3 bg-green-500 hover:bg-green-600 text-white rounded w-full font-bold"
