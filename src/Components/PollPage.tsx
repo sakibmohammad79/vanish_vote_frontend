@@ -1,7 +1,6 @@
 "use client";
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -65,7 +64,11 @@ const PollPage = () => {
       setHasVoted(true);
 
       fetchPollData();
-      toast.success("Vote submitted successfully!");
+
+      toast.success("Thank you! See result when poll is ended!", {
+        duration: 4000,
+        position: "top-center",
+      });
     } catch (err) {
       console.error("Error voting:", err);
       toast.error("Failed to submit vote.");
