@@ -122,41 +122,44 @@ const PollPage = () => {
             return (
               <li
                 key={index}
-                className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 relative"
+                className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700"
               >
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">
-                    {opt.text}
-                  </span>
-                  {shouldShowResults() && (
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">
-                      {opt.votes} votes ({percentage}%)
+                <div className="flex flex-col space-y-2">
+                  {/* Option Text & Vote Count */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                      {opt.text}
                     </span>
-                  )}
-                </div>
-
-                {/* Progress Bar */}
-                {shouldShowResults() && (
-                  <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-2 relative">
-                    <div
-                      className="h-2 bg-violet-600 rounded-full transition-all"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
+                    {shouldShowResults() && (
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">
+                        {opt.votes} votes ({percentage}%)
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Vote Button */}
-                <button
-                  onClick={() => handleVote(index)}
-                  disabled={hasVoted}
-                  className={`absolute top-1/2 right-4 transform -translate-y-1/2 px-3 py-1 ${
-                    hasVoted
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-violet-600 hover:bg-violet-700"
-                  } text-white text-sm rounded-lg transition`}
-                >
-                  {hasVoted ? "Voted" : "Vote"}
-                </button>
+                  {/* Progress Bar */}
+                  {shouldShowResults() && (
+                    <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
+                      <div
+                        className="h-2 bg-violet-600 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  )}
+
+                  {/* Vote Button */}
+                  <button
+                    onClick={() => handleVote(index)}
+                    disabled={hasVoted}
+                    className={`mt-2 px-3 py-1 w-full text-center ${
+                      hasVoted
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-violet-600 hover:bg-violet-700"
+                    } text-white text-sm rounded-lg transition`}
+                  >
+                    {hasVoted ? "Voted" : "Vote"}
+                  </button>
+                </div>
               </li>
             );
           })}
